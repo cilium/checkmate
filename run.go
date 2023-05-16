@@ -96,8 +96,8 @@ func RunAll(t *testing.T, runConf *RunConf) {
 
 // Run runs the provided test suite using the provided run configuration.
 func Run(t *testing.T, suite interface{}, runConf *RunConf) {
-	runner := newSuiteRunner(t, suite, runConf)
-	runner.run()
+	runner := newSuiteRunner(suite, runConf)
+	runner.run(t)
 }
 
 // ListAll returns the names of all the test functions registered with the
@@ -114,7 +114,7 @@ func ListAll(runConf *RunConf) []string {
 // suite that will be run with the provided run configuration.
 func List(suite interface{}, runConf *RunConf) []string {
 	var names []string
-	runner := newSuiteRunner(nil, suite, runConf)
+	runner := newSuiteRunner(suite, runConf)
 	for _, t := range runner.tests {
 		names = append(names, t.String())
 	}

@@ -63,7 +63,7 @@ func (method *methodType) suiteName() string {
 }
 
 func (method *methodType) String() string {
-	return method.suiteName() + "." + method.Info.Name
+	return method.Info.Name
 }
 
 func (method *methodType) matches(re *regexp.Regexp) bool {
@@ -381,7 +381,6 @@ type suiteRunner struct {
 	reportedProblemLast       bool
 	benchTime                 time.Duration
 	benchMem                  bool
-	testingT                  *testing.T
 }
 
 type RunConf struct {
@@ -396,7 +395,7 @@ type RunConf struct {
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
-func newSuiteRunner(t *testing.T, suite interface{}, runConf *RunConf) *suiteRunner {
+func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	var conf RunConf
 	if runConf != nil {
 		conf = *runConf
@@ -420,7 +419,6 @@ func newSuiteRunner(t *testing.T, suite interface{}, runConf *RunConf) *suiteRun
 		benchTime: conf.BenchmarkTime,
 		benchMem:  conf.BenchmarkMem,
 		tests:     make([]*methodType, 0, suiteNumMethods),
-		testingT:  t,
 	}
 	if runner.benchTime == 0 {
 		runner.benchTime = 1 * time.Second
@@ -470,19 +468,22 @@ func newSuiteRunner(t *testing.T, suite interface{}, runConf *RunConf) *suiteRun
 }
 
 // Run all methods in the given suite.
-func (runner *suiteRunner) run() {
-	if runner.runError == nil && len(runner.tests) > 0 {
-		if runner.checkFixtureArgs() {
-			runner.runFixture(runner.setUpSuite, "", nil)
-			runner.testingT.Cleanup(func() {
-				runner.runFixture(runner.tearDownSuite, "", nil)
-			})
+func (runner *suiteRunner) run(t *testing.T) {
+	suiteName := reflect.Indirect(reflect.ValueOf(runner.suite)).Type().Name()
+	t.Run(suiteName, func(t *testing.T) {
+		if runner.runError == nil && len(runner.tests) > 0 {
+			if runner.checkFixtureArgs(t) {
+				runner.runFixture(runner.setUpSuite, "", nil)
+				t.Cleanup(func() {
+					runner.runFixture(runner.tearDownSuite, "", nil)
+				})
 
-			for i := 0; i != len(runner.tests); i++ {
-				runner.forkTest(runner.tests[i])
+				for i := 0; i != len(runner.tests); i++ {
+					runner.forkTest(t, runner.tests[i])
+				}
 			}
 		}
-	}
+	})
 }
 
 func (runner *suiteRunner) newC(method *methodType, kind funcKind, testName string, logb *logger) *C {
@@ -495,8 +496,6 @@ func (runner *suiteRunner) newC(method *methodType, kind funcKind, testName stri
 	}
 
 	return &C{
-		// Must be overridden by subtest.
-		T:         runner.testingT,
 		method:    method,
 		kind:      kind,
 		testName:  testName,
@@ -511,9 +510,9 @@ func (runner *suiteRunner) newC(method *methodType, kind funcKind, testName stri
 
 // Create a call object with the given suite method, and fork a
 // goroutine with the provided dispatcher for running it.
-func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName string, logb *logger, dispatcher func(c *C)) {
+func (runner *suiteRunner) forkCall(t *testing.T, method *methodType, kind funcKind, testName string, logb *logger, dispatcher func(c *C)) {
 	c := runner.newC(method, kind, testName, logb)
-	runner.testingT.Run(testName, func(t *testing.T) {
+	t.Run(testName, func(t *testing.T) {
 		c.T = t
 		dispatcher(c)
 	})
@@ -532,9 +531,9 @@ func (runner *suiteRunner) runFixture(method *methodType, testName string, logb 
 
 // Run the suite test method, together with the test-specific fixture,
 // asynchronously.
-func (runner *suiteRunner) forkTest(method *methodType) {
+func (runner *suiteRunner) forkTest(t *testing.T, method *methodType) {
 	testName := method.String()
-	runner.forkCall(method, testKd, testName, nil, func(c *C) {
+	runner.forkCall(t, method, testKd, testName, nil, func(c *C) {
 		c.T.Cleanup(func() {
 			runner.runFixture(runner.tearDownTest, testName, nil)
 		})
@@ -585,14 +584,14 @@ func (runner *suiteRunner) forkTest(method *methodType) {
 
 // Verify if the fixture arguments are *check.C.  In case of errors,
 // log the error as a panic in the fixture method call, and return false.
-func (runner *suiteRunner) checkFixtureArgs() bool {
+func (runner *suiteRunner) checkFixtureArgs(t *testing.T) bool {
 	succeeded := true
 	argType := reflect.TypeOf(&C{})
 	for _, method := range []*methodType{runner.setUpSuite, runner.tearDownSuite, runner.setUpTest, runner.tearDownTest} {
 		if method != nil {
 			mt := method.Type()
 			if mt.NumIn() != 1 || mt.In(0) != argType {
-				runner.testingT.Errorf("%s: first argument is not *check.C", niceFuncName(method.PC()))
+				t.Errorf("%s: first argument is not *check.C", niceFuncName(method.PC()))
 				succeeded = false
 			}
 		}
