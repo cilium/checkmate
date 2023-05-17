@@ -473,9 +473,9 @@ func (runner *suiteRunner) run(t *testing.T) {
 	t.Run(suiteName, func(t *testing.T) {
 		if runner.runError == nil && len(runner.tests) > 0 {
 			if runner.checkFixtureArgs(t) {
-				runner.runFixture(runner.setUpSuite, "", nil)
+				runner.runFixture(t, runner.setUpSuite, "", nil)
 				t.Cleanup(func() {
-					runner.runFixture(runner.tearDownSuite, "", nil)
+					runner.runFixture(t, runner.tearDownSuite, "", nil)
 				})
 
 				for i := 0; i != len(runner.tests); i++ {
@@ -486,7 +486,7 @@ func (runner *suiteRunner) run(t *testing.T) {
 	})
 }
 
-func (runner *suiteRunner) newC(method *methodType, kind funcKind, testName string, logb *logger) *C {
+func (runner *suiteRunner) newC(t *testing.T, method *methodType, kind funcKind, testName string, logb *logger) *C {
 	var logw io.Writer
 	if runner.output.Stream {
 		logw = runner.output
@@ -496,6 +496,7 @@ func (runner *suiteRunner) newC(method *methodType, kind funcKind, testName stri
 	}
 
 	return &C{
+		T:         t,
 		method:    method,
 		kind:      kind,
 		testName:  testName,
@@ -511,9 +512,8 @@ func (runner *suiteRunner) newC(method *methodType, kind funcKind, testName stri
 // Create a call object with the given suite method, and fork a
 // goroutine with the provided dispatcher for running it.
 func (runner *suiteRunner) forkCall(t *testing.T, method *methodType, kind funcKind, testName string, logb *logger, dispatcher func(c *C)) {
-	c := runner.newC(method, kind, testName, logb)
 	t.Run(testName, func(t *testing.T) {
-		c.T = t
+		c := runner.newC(t, method, kind, testName, logb)
 		dispatcher(c)
 	})
 }
@@ -522,9 +522,9 @@ func (runner *suiteRunner) forkCall(t *testing.T, method *methodType, kind funcK
 // goroutine like all suite methods, but this method will not return
 // while the fixture goroutine is not done, because the fixture must be
 // run in a desired order.
-func (runner *suiteRunner) runFixture(method *methodType, testName string, logb *logger) {
+func (runner *suiteRunner) runFixture(t *testing.T, method *methodType, testName string, logb *logger) {
 	if method != nil {
-		c := runner.newC(method, fixtureKd, testName, logb)
+		c := runner.newC(t, method, fixtureKd, testName, logb)
 		c.method.Call([]reflect.Value{reflect.ValueOf(c)})
 	}
 }
@@ -535,12 +535,12 @@ func (runner *suiteRunner) forkTest(t *testing.T, method *methodType) {
 	testName := method.String()
 	runner.forkCall(t, method, testKd, testName, nil, func(c *C) {
 		c.T.Cleanup(func() {
-			runner.runFixture(runner.tearDownTest, testName, nil)
+			runner.runFixture(c.T, runner.tearDownTest, testName, nil)
 		})
 		defer c.StopTimer()
 		benchN := 1
 		for {
-			runner.runFixture(runner.setUpTest, testName, c.logb)
+			runner.runFixture(c.T, runner.setUpTest, testName, c.logb)
 			mt := c.method.Type()
 			if mt.NumIn() != 1 || mt.In(0) != reflect.TypeOf(c) {
 				// Rather than a plain panic, provide a more helpful message when
