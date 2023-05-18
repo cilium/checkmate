@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"runtime"
 
-	check "github.com/lmb/checkmate"
+	check "github.com/cilium/checkmate"
 )
 
 type CheckersS struct{}

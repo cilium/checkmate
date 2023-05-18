@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"sync"
 
-	check "github.com/lmb/checkmate"
+	check "github.com/cilium/checkmate"
 )
 
 var helpersS = check.Suite(&HelpersS{})

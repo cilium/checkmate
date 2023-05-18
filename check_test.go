@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	check "github.com/lmb/checkmate"
+	check "github.com/cilium/checkmate"
 )
 
 var suitesRun int = 0

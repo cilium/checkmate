@@ -5,7 +5,7 @@ package check_test
 import (
 	"time"
 
-	. "github.com/lmb/checkmate"
+	. "github.com/cilium/checkmate"
 )
 
 var benchmarkS = Suite(&BenchmarkS{})

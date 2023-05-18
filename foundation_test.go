@@ -13,7 +13,7 @@ import (
 	"regexp"
 	"strings"
 
-	check "github.com/lmb/checkmate"
+	check "github.com/cilium/checkmate"
 )
 
 // -----------------------------------------------------------------------

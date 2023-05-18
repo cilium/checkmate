@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	. "github.com/lmb/checkmate"
+	. "github.com/cilium/checkmate"
 )
 
 var _ = Suite(&reporterS{})

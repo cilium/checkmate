@@ -6,7 +6,7 @@ import (
 	"errors"
 	"sync"
 
-	. "github.com/lmb/checkmate"
+	. "github.com/cilium/checkmate"
 )
 
 var runnerS = Suite(&RunS{})

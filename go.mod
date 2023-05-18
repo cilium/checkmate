@@ -1,4 +1,4 @@
-module github.com/lmb/checkmate
+module github.com/cilium/checkmate
 
 go 1.11
 

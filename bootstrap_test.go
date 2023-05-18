@@ -15,7 +15,7 @@ package check_test
 import (
 	"strings"
 
-	check "github.com/lmb/checkmate"
+	check "github.com/cilium/checkmate"
 )
 
 type BootstrapS struct{}

@@ -19,14 +19,14 @@ func (s *Suite) TestSomething(c *C) {
 Use it as a global replacement:
 
 ```sh
-$ go mod edit -replace=gopkg.in/check.v1=github.com/lmb/checkmate
+$ go mod edit -replace=gopkg.in/check.v1=github.com/cilium/checkmate
 ```
 
 Or replace imports manually:
 
 ```go
-import . "github.com/lmb/checkmate"
-import check "github.com/lmb/checkmate"
+import . "github.com/cilium/checkmate"
+import check "github.com/cilium/checkmate"
 ```
 
 ## Caveats

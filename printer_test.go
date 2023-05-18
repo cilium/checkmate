@@ -1,7 +1,7 @@
 package check_test
 
 import (
-	. "github.com/lmb/checkmate"
+	. "github.com/cilium/checkmate"
 )
 
 var _ = Suite(&PrinterS{})
